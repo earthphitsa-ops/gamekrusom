@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Kingdom Quest - ภารกิจพิชิตความรู้</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;700;800&family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root { --vh: 1vh; }
+    body { 
+      font-family: 'Sarabun', sans-serif; 
+      background-color: #0f172a;
+      user-select: none;
+    }
+    h1, h2, h3, .font-fantasy { font-family: 'Prompt', sans-serif; }
+    
+    .view { display: none; opacity: 0; transition: opacity 0.4s ease; }
+    .view.active { display: block; opacity: 1; }
+    
+    /* ธีมแฟนตาซี */
+    .bg-magic-night {
+      background: radial-gradient(circle at top, #312e81 0%, #1e1b4b 50%, #020617 100%);
+      background-attachment: fixed;
+    }
+    
+    .panel-parchment {
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border: 4px solid #b45309;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(180, 83, 9, 0.2);
+      border-radius: 1.5rem;
+    }
+
+    .panel-wood {
+      background: linear-gradient(to bottom, #78350f, #451a03);
+      border: 3px solid #f59e0b;
+      box-shadow: 0 8px 0 #290f02, 0 15px 20px rgba(0,0,0,0.4);
+      border-radius: 1rem;
+      color: white;
+    }
+
+    /* ปุ่ม 3D สไตล์เกมมือถือ */
+    .btn-3d {
+      background: linear-gradient(to bottom, #fbbf24, #f59e0b);
+      border: 3px solid #b45309;
+      border-bottom-width: 6px;
+      border-radius: 1rem;
+      color: #78350f;
+      transition: all 0.1s;
+      text-shadow: 1px 1px 0 rgba(255,255,255,0.4);
+    }
+    .btn-3d:active, .btn-3d.active-press {
+      transform: translateY(4px);
+      border-bottom-width: 2px;
+      margin-bottom: 4px;
+    }
+    
+    .btn-answer {
+      background: #ffffff;
+      border: 3px solid #cbd5e1;
+      border-bottom-width: 6px;
+      border-radius: 1rem;
+      color: #334155;
+      transition: all 0.1s;
+      text-shadow: none;
+    }
+    .btn-answer:active { transform: translateY(4px); border-bottom-width: 2px; }
+
+    /* Map Magic Frame */
+    .map-frame {
+      border: 6px solid #fbbf24;
+      border-radius: 1.5rem;
+      box-shadow: 0 0 20px rgba(251, 191, 36, 0.6), inset 0 0 15px rgba(0,0,0,0.8);
+      position: relative;
+    }
+    .map-frame::before {
+      content: ''; position: absolute; top: -10px; left: -10px; right: -10px; bottom: -10px;
+      border: 2px dashed #f59e0b; border-radius: 1.8rem; pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Animations */
+    @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .animate-float { animation: float 3s ease-in-out infinite; }
+    
+    @keyframes glow { 0%,100%{filter:drop-shadow(0 0 5px #fbbf24)} 50%{filter:drop-shadow(0 0 15px #f59e0b)} }
+    .animate-glow { animation: glow 2s infinite; }
+    
+    @keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+    .animate-in { animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+    
+    .xp-bar-fill { transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    
+    .quest-title { text-shadow: 0 2px 4px rgba(0,0,0,0.9); }
+  </style>
+</head>
+<body class="bg-magic-night text-slate-100 min-h-screen overflow-x-hidden">
+
+  <!-- LOGIN VIEW -->
+  <div id="view-login" class="view active">
+    <div class="min-h-screen flex items-center justify-center p-4">
+      <div class="w-full max-w-md text-center animate-in">
+        <div class="mb-6 animate-float">
+          <div class="text-7xl mb-2 drop-shadow-2xl">🏰</div>
+          <h1 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-b from-amber-200 to-amber-500 drop-shadow-lg mb-1">Kingdom Quest</h1>
+          <p class="text-amber-200/80 font-bold tracking-wider">ภารกิจพิชิตความรู้ ป.5</p>
+        </div>
+        
+        <div class="panel-parchment p-6">
+          <label class="block text-amber-900 font-extrabold text-left mb-2 text-lg">📝 ตั้งชื่อนักผจญภัย</label>
+          <input id="player-name" type="text" maxlength="15" class="w-full px-4 py-3 rounded-xl border-4 border-amber-300 bg-amber-50 text-amber-900 font-bold text-xl focus:outline-none focus:border-amber-500 mb-6 text-center placeholder-amber-300" placeholder="ใส่ชื่อของคุณ...">
+          
+          <label class="block text-amber-900 font-extrabold text-left mb-3 text-lg">🛡️ เลือกอาชีพ</label>
+          <div class="grid grid-cols-3 gap-3 mb-6" id="class-select">
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="นักรบ"><span class="text-3xl block mb-1">🗡️</span><span class="text-sm font-bold text-amber-900">นักรบ</span></button>
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="จอมเวท"><span class="text-3xl block mb-1">🔮</span><span class="text-sm font-bold text-amber-900">จอมเวท</span></button>
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="นักธนู"><span class="text-3xl block mb-1">🏹</span><span class="text-sm font-bold text-amber-900">นักธนู</span></button>
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="พระสงฆ์"><span class="text-3xl block mb-1">🙏</span><span class="text-sm font-bold text-amber-900">พระสงฆ์</span></button>
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="นักปราชญ์"><span class="text-3xl block mb-1">📚</span><span class="text-sm font-bold text-amber-900">ปราชญ์</span></button>
+            <button type="button" class="class-btn p-2 rounded-xl border-4 border-amber-200 bg-white hover:bg-amber-100 transition-all text-center opacity-70" data-class="นักสำรวจ"><span class="text-3xl block mb-1">🧭</span><span class="text-sm font-bold text-amber-900">นักสำรวจ</span></button>
+          </div>
+          
+          <button id="enter-btn" type="button" class="btn-3d w-full py-4 font-extrabold text-2xl flex justify-center items-center gap-2">เข้าสู่อาณาจักร <i data-lucide="swords" class="w-6 h-6"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DASHBOARD VIEW -->
+  <div id="view-dashboard" class="view">
+    <div class="min-h-screen pb-24 max-w-3xl mx-auto">
+      
+      <!-- Top HUD -->
+      <header class="panel-wood mx-4 mt-4 p-3 flex items-center justify-between sticky top-4 z-20">
+        <div class="flex items-center gap-3 min-w-0">
+          <div class="w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-full border-4 border-amber-400 bg-indigo-900 flex items-center justify-center text-2xl sm:text-3xl shadow-lg relative">
+            <span id="avatar-icon">⚔️</span>
+            <div class="absolute -bottom-2 -right-2 bg-rose-600 text-white text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full border-2 border-white" id="dash-level">Lv.1</div>
+          </div>
+          <div class="min-w-0">
+            <p class="text-amber-100 font-bold text-base sm:text-lg leading-tight truncate max-w-[90px] sm:max-w-[150px]" id="dash-name">Player</p>
+            <p class="text-amber-400 text-xs sm:text-sm font-medium" id="dash-class">นักรบ</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <div class="bg-black/40 px-3 py-1.5 rounded-xl border-2 border-amber-600/50 flex items-center gap-1.5">
+            <span class="text-lg sm:text-xl animate-glow">🪙</span>
+            <span class="text-amber-300 font-extrabold text-base sm:text-xl" id="dash-coins">0</span>
+          </div>
+          <!-- Logout Button สลับผู้เล่น -->
+          <button type="button" onclick="logout()" class="btn-3d p-2 bg-gradient-to-b from-rose-600 to-rose-800 border-rose-900 text-white rounded-xl flex items-center justify-center transition-transform hover:scale-110 shadow-lg" title="สลับผู้เล่น">
+            <i data-lucide="log-out" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- XP Bar -->
+      <div class="px-6 mt-4">
+        <div class="flex justify-between text-xs text-indigo-200 font-bold mb-1">
+          <span>✨ ค่าประสบการณ์ (XP)</span><span id="xp-text">0 / 100</span>
+        </div>
+        <div class="h-4 bg-indigo-950/80 rounded-full overflow-hidden border-2 border-indigo-500/50 p-0.5">
+          <div class="xp-bar-fill h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(52,211,153,0.8)]" id="xp-bar" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="px-4 mt-6">
+        
+        <!-- Map Tab -->
+        <div id="tab-map" class="tab-content animate-in">
+          <div class="map-frame overflow-hidden mb-6 bg-black flex items-center justify-center relative" style="aspect-ratio: 16/9;">
+             <img src="https://res.cloudinary.com/dyurfqm02/image/upload/v1782398505/%E0%B9%81%E0%B8%9C%E0%B8%99%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B9%80%E0%B8%97%E0%B8%A8%E0%B9%84%E0%B8%97%E0%B8%A2%E0%B9%81%E0%B8%99%E0%B8%A7%E0%B8%99%E0%B8%AD%E0%B8%99_ycvyti.jpg" class="w-full h-full object-cover z-0" alt="แผนที่อาณาจักรไทย">
+             <div class="absolute bottom-2 right-2 bg-black/60 px-2 py-1 rounded text-[10px] text-amber-200 z-20">แผนที่อาณาจักร</div>
+          </div>
+          
+          <h3 class="text-amber-300 font-bold text-xl mb-3 flex items-center gap-2 drop-shadow-md"><span class="text-2xl">📜</span> เลือกภารกิจ</h3>
+          
+          <!-- Dynamic Quest Map Grid -->
+          <div class="grid grid-cols-2 gap-3" id="map-quest-grid"></div>
+        </div>
+
+        <!-- Battle Tab -->
+        <div id="tab-battle" class="tab-content hidden animate-in">
+          <div class="panel-parchment p-6">
+            <h3 class="font-fantasy text-amber-900 font-extrabold text-2xl text-center mb-6">⚔️ ลานประลองเวท (แข่งทีม)</h3>
+            <div class="space-y-4 mb-6">
+              <div class="bg-red-100 p-3 rounded-xl border-2 border-red-300">
+                <label class="text-red-800 font-bold text-sm block mb-1">🔴 ชื่อทีมแดง (Team A)</label>
+                <input id="team-a-name" type="text" maxlength="15" class="w-full px-3 py-2 rounded-lg border-2 border-red-400 text-red-900 font-bold focus:outline-none" placeholder="มังกรเพลิง">
+              </div>
+              <div class="bg-blue-100 p-3 rounded-xl border-2 border-blue-300">
+                <label class="text-blue-800 font-bold text-sm block mb-1">🔵 ชื่อทีมน้ำเงิน (Team B)</label>
+                <input id="team-b-name" type="text" maxlength="15" class="w-full px-3 py-2 rounded-lg border-2 border-blue-400 text-blue-900 font-bold focus:outline-none" placeholder="ฉลามวารี">
+              </div>
+            </div>
+            
+            <p class="text-amber-900 font-bold text-center mb-2">เลือกหมวดวิชาที่จะประลอง (10 ข้อ)</p>
+            <div class="grid grid-cols-2 gap-2 mb-6" id="battle-subject-select">
+              <button type="button" class="battle-subj-btn p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-sm" data-subj="history">🏛️ ประวัติศาสตร์</button>
+              <button type="button" class="battle-subj-btn p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-sm" data-subj="geography">🌍 ภูมิศาสตร์</button>
+              <button type="button" class="battle-subj-btn p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-sm" data-subj="religion">🙏 ศาสนา</button>
+              <button type="button" class="battle-subj-btn p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-sm" data-subj="economics">💰 เศรษฐศาสตร์</button>
+              <button type="button" class="battle-subj-btn p-2 rounded-lg border-2 border-amber-400 bg-amber-50 text-amber-900 font-bold text-sm col-span-2" data-subj="citizen">👥 หน้าที่พลเมือง</button>
+            </div>
+            
+            <button type="button" id="battle-start-btn" class="btn-3d w-full py-3 font-extrabold text-xl text-white bg-gradient-to-b from-rose-500 to-rose-700 border-rose-900">เริ่มประลอง!</button>
+          </div>
+        </div>
+
+        <!-- Quests Status Tab -->
+        <div id="tab-quests" class="tab-content hidden animate-in">
+          <div class="space-y-3" id="quest-list"></div>
+        </div>
+
+        <!-- Badges Tab -->
+        <div id="tab-badges" class="tab-content hidden animate-in">
+          <div class="panel-parchment p-5">
+            <h3 class="text-amber-900 font-extrabold text-xl text-center mb-4">🏅 คลังเหรียญตรา</h3>
+            <div class="grid grid-cols-3 gap-3" id="badge-grid"></div>
+          </div>
+        </div>
+
+        <!-- Leaderboard Tab -->
+        <div id="tab-leaderboard" class="tab-content hidden animate-in">
+          <div class="panel-wood p-5">
+            <h3 class="text-amber-300 font-extrabold text-xl text-center mb-4">🏆 หอเกียรติยศ (อันดับ)</h3>
+            <div id="leaderboard-list" class="space-y-2"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Bottom Navigation (Sticky) -->
+      <nav class="fixed bottom-0 left-0 right-0 bg-indigo-950/90 backdrop-blur-md border-t-2 border-indigo-500/50 p-2 pb-safe flex justify-around items-center z-30">
+        <button class="nav-tab flex flex-col items-center p-2 text-indigo-300 hover:text-amber-300 transition-colors" data-tab="map" onclick="switchTab('map')">
+          <i data-lucide="map" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">แผนที่</span>
+        </button>
+        <button class="nav-tab flex flex-col items-center p-2 text-indigo-300 hover:text-amber-300 transition-colors" data-tab="quests" onclick="switchTab('quests')">
+          <i data-lucide="scroll" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">ภารกิจ</span>
+        </button>
+        <div class="relative -top-5">
+          <button class="nav-tab flex flex-col items-center p-4 bg-gradient-to-b from-rose-500 to-rose-700 border-4 border-indigo-900 rounded-full shadow-[0_0_15px_rgba(225,29,72,0.6)] text-white hover:scale-110 transition-transform" data-tab="battle" onclick="switchTab('battle')">
+            <i data-lucide="swords" class="w-8 h-8"></i>
+          </button>
+        </div>
+        <button class="nav-tab flex flex-col items-center p-2 text-indigo-300 hover:text-amber-300 transition-colors" data-tab="badges" onclick="switchTab('badges')">
+          <i data-lucide="shield" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">เหรียญตรา</span>
+        </button>
+        <button class="nav-tab flex flex-col items-center p-2 text-indigo-300 hover:text-amber-300 transition-colors" data-tab="leaderboard" onclick="switchTab('leaderboard')">
+          <i data-lucide="trophy" class="w-6 h-6 mb-1"></i><span class="text-[10px] font-bold">อันดับ</span>
+        </button>
+      </nav>
+
+    </div>
+  </div>
+
+  <!-- QUEST VIEW (Solo) -->
+  <div id="view-quest" class="view">
+    <div class="min-h-screen p-4 flex flex-col justify-center relative">
+      <div class="absolute top-4 left-4 z-10">
+        <button type="button" onclick="showView('view-dashboard')" class="btn-3d bg-white px-4 py-2 flex items-center gap-1 text-sm shadow-lg"><i data-lucide="arrow-left" class="w-4 h-4"></i> ถอยทัพ</button>
+      </div>
+      <div class="absolute top-4 right-4 z-10">
+        <div class="panel-wood px-4 py-2 text-sm font-bold shadow-lg" id="quest-progress">ข้อ 1/10</div>
+      </div>
+      
+      <div class="w-full max-w-lg mx-auto animate-in mt-14">
+        
+        <!-- Player & Quest Info Card -->
+        <div class="panel-wood p-3 px-5 mb-4 rounded-2xl flex items-center justify-between border-2 border-amber-500 shadow-md relative z-10">
+          <div class="flex items-center gap-3 w-5/12 min-w-0">
+            <div class="w-10 h-10 bg-indigo-950 rounded-full border-2 border-amber-400 flex items-center justify-center text-xl shadow-inner shrink-0" id="quest-card-icon">⚔️</div>
+            <div class="truncate">
+              <p class="text-amber-200/70 text-[10px] font-bold leading-tight">ผู้ประลอง</p>
+              <p class="text-amber-400 font-bold text-sm sm:text-base leading-tight truncate" id="quest-card-name">Player</p>
+            </div>
+          </div>
+          <div class="h-8 w-0.5 bg-amber-700/50 shrink-0"></div>
+          <div class="w-5/12 text-right truncate">
+            <p class="text-amber-200/70 text-[10px] font-bold leading-tight">ภารกิจวิชา</p>
+            <p class="text-amber-400 font-bold text-sm sm:text-base leading-tight truncate" id="quest-card-topic">ประวัติศาสตร์</p>
+          </div>
+        </div>
+
+        <div class="panel-parchment p-6 mb-6 relative z-0">
+          <div class="absolute -top-6 left-1/2 -translate-x-1/2 bg-amber-600 text-white px-4 py-1 rounded-full border-2 border-amber-200 font-bold text-sm shadow-md">คำถาม</div>
+          <h3 class="font-bold text-amber-900 text-xl text-center leading-relaxed mt-2" id="quest-question">คำถาม</h3>
+        </div>
+        
+        <div class="space-y-3" id="quest-answers"></div>
+        <div id="quest-feedback" class="mt-4 text-center text-xl font-extrabold hidden p-3 rounded-xl shadow-lg border-2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BATTLE VIEW (Team vs Team) -->
+  <div id="view-battle" class="view">
+    <div class="min-h-screen p-4 flex flex-col relative bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-indigo-950 bg-blend-overlay">
+      <div class="flex items-center justify-between mb-4 z-10">
+        <!-- ปุ่มยอมแพ้ (เรียกฟังก์ชัน surrenderBattle) -->
+        <button type="button" onclick="surrenderBattle()" class="btn-3d bg-white px-3 py-1 flex items-center gap-1 text-xs"><i data-lucide="flag" class="w-4 h-4 text-red-600"></i> ยอมแพ้</button>
+        <span class="panel-wood px-4 py-1 text-xs font-bold" id="battle-progress">ข้อ 1/10</span>
+      </div>
+
+      <!-- Scoreboard -->
+      <div class="flex items-center justify-between mb-4 gap-2 z-10">
+        <div id="battle-team-a-box" class="flex-1 text-center p-3 rounded-2xl border-4 border-red-500 bg-red-900/80 shadow-[0_0_15px_rgba(239,68,68,0.5)] transition-all">
+          <p class="text-red-200 font-bold text-xs truncate" id="battle-team-a-label">ทีม A</p>
+          <p class="text-white font-black text-4xl drop-shadow-md" id="battle-score-a">0</p>
+        </div>
+        <div class="text-amber-400 font-black text-2xl italic px-2 drop-shadow-lg">VS</div>
+        <div id="battle-team-b-box" class="flex-1 text-center p-3 rounded-2xl border-4 border-blue-500 bg-blue-900/80 shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all">
+          <p class="text-blue-200 font-bold text-xs truncate" id="battle-team-b-label">ทีม B</p>
+          <p class="text-white font-black text-4xl drop-shadow-md" id="battle-score-b">0</p>
+        </div>
+      </div>
+
+      <!-- Current turn -->
+      <div class="text-center mb-6 z-10">
+        <span class="px-6 py-2 rounded-full text-base font-bold shadow-lg inline-block border-2 text-white transition-all" id="battle-turn-indicator">ตาของ ทีม A</span>
+      </div>
+
+      <!-- Question -->
+      <div class="flex-1 flex flex-col justify-center max-w-lg mx-auto w-full z-10">
+        <div class="panel-parchment p-6 animate-in mb-4" id="battle-question-card">
+          <h3 class="font-bold text-amber-900 text-xl text-center leading-relaxed" id="battle-question">คำถาม</h3>
+        </div>
+        <div class="space-y-3" id="battle-answers"></div>
+        <div id="battle-feedback" class="mt-4 text-center text-xl font-extrabold hidden p-3 rounded-xl shadow-lg border-2"></div>
+      </div>
+
+      <!-- POPUP VICTORY MODAL FOR BATTLE -->
+      <div id="battle-victory-modal" class="absolute inset-0 z-50 flex items-center justify-center hidden bg-black/80 backdrop-blur-sm transition-opacity">
+        <div class="panel-parchment p-8 text-center w-11/12 max-w-md relative scale-0 transition-transform duration-500" id="victory-card-content">
+          <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 pointer-events-none rounded-2xl"></div>
+          
+          <div class="text-7xl sm:text-8xl mb-4 animate-float" id="modal-result-icon">🏆</div>
+          <h2 class="text-2xl font-extrabold text-amber-900 mb-1" id="modal-result-title">ผลการประลองเวท</h2>
+          <p class="text-3xl sm:text-4xl font-black text-indigo-700 mb-8 drop-shadow-sm" id="modal-winner-name"></p>
+          
+          <div class="flex justify-center items-center gap-4 sm:gap-6 mb-8 bg-amber-100/50 p-4 rounded-xl border-2 border-amber-300 relative z-10">
+            <div class="text-center">
+              <p class="text-red-600 font-bold text-sm" id="modal-team-a-name">ทีม A</p>
+              <p class="text-red-900 font-black text-4xl" id="modal-score-a">0</p>
+            </div>
+            <span class="text-amber-500 font-black text-2xl">-</span>
+            <div class="text-center">
+              <p class="text-blue-600 font-bold text-sm" id="modal-team-b-name">ทีม B</p>
+              <p class="text-blue-900 font-black text-4xl" id="modal-score-b">0</p>
+            </div>
+          </div>
+          
+          <button type="button" onclick="closeVictoryModal()" class="btn-3d w-full py-4 text-white bg-gradient-to-b from-indigo-500 to-indigo-700 border-indigo-900 font-bold text-xl relative z-10">ปิดและกลับสู่อาณาจักร</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT VIEW (Solo) -->
+  <div id="view-result" class="view">
+    <div class="min-h-screen flex items-center justify-center p-4 relative">
+      <div class="absolute inset-0 flex justify-center items-center pointer-events-none opacity-50">
+         <div class="w-96 h-96 bg-amber-400 rounded-full blur-[100px]"></div>
+      </div>
+      <div class="panel-wood p-8 text-center animate-in w-full max-w-sm z-10 border-4 border-amber-400 relative">
+        <div class="absolute -top-12 left-1/2 -translate-x-1/2 text-8xl drop-shadow-[0_0_20px_rgba(251,191,36,0.8)] animate-float" id="result-icon">🎉</div>
+        <h2 class="text-3xl font-extrabold text-amber-300 mb-2 mt-8">ภารกิจสำเร็จ!</h2>
+        <p class="text-amber-100 text-lg mb-6 font-medium bg-black/30 py-1 rounded-full px-4" id="result-score"></p>
+        
+        <div class="bg-black/40 border-2 border-amber-500/50 rounded-2xl p-4 mb-8 shadow-inner">
+           <p class="text-amber-200/70 text-sm mb-1 font-bold">ของรางวัลที่ได้รับ</p>
+           <p class="text-amber-400 text-2xl font-black drop-shadow-md" id="result-rewards"></p>
+        </div>
+        
+        <button type="button" onclick="showView('view-dashboard')" class="btn-3d w-full py-4 bg-gradient-to-b from-amber-400 to-amber-600 border-amber-800 text-amber-950 font-black text-xl">รับรางวัล</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+// Audio System
+const audioSystem = {
+  audioContext: null, masterGain: null,
+  bgm: null, 
+  init() {
+    if (this.audioContext) return;
+    try {
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.connect(this.audioContext.destination);
+      this.masterGain.gain.value = 0.4;
+      
+      this.bgm = new Audio('https://res.cloudinary.com/dyurfqm02/video/upload/v1782400955/0625_lyuapf.mp3'); 
+      this.bgm.loop = true; 
+      this.bgm.volume = 0.15; 
+    } catch(e){}
+  },
+  playBGM() {
+    if (this.bgm && this.bgm.paused) {
+      this.bgm.play().catch(e => console.log("รอการตอบสนองผู้เล่น..."));
+    }
+  },
+  playTone(freq, duration, type='sine', volume=1) {
+    if (!this.audioContext) return;
+    try {
+      const osc = this.audioContext.createOscillator();
+      const gain = this.audioContext.createGain();
+      osc.connect(gain); gain.connect(this.masterGain);
+      osc.frequency.value = freq; osc.type = type;
+      gain.gain.setValueAtTime(volume, this.audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+      osc.start(this.audioContext.currentTime);
+      osc.stop(this.audioContext.currentTime + duration);
+    } catch(e){}
+  },
+  playSound(name) {
+    if (!this.audioContext) this.init();
+    if (!this.audioContext) return;
+    const s = {
+      click: () => this.playTone(600,0.1,'sine',0.6),
+      correct: () => { this.playTone(523,0.1,'triangle',0.7); setTimeout(()=>this.playTone(659,0.1,'triangle',0.7),100); setTimeout(()=>this.playTone(1046,0.3,'sine',0.8),200); },
+      wrong: () => { this.playTone(250,0.15,'sawtooth',0.5); setTimeout(()=>this.playTone(200,0.3,'sawtooth',0.5),150); },
+      levelup: () => { this.playTone(440,0.1,'triangle',0.8); setTimeout(()=>this.playTone(554,0.1,'triangle',0.8),100); setTimeout(()=>this.playTone(659,0.1,'triangle',0.8),200); setTimeout(()=>this.playTone(880,0.4,'sine',0.8),300); },
+      coin: () => { this.playTone(1200,0.05,'sine',0.3); setTimeout(()=>this.playTone(1600,0.1,'sine',0.3),50); },
+      button: () => this.playTone(400,0.1,'square',0.4),
+      victory: () => { this.playTone(523,0.2,'triangle',0.8); setTimeout(()=>this.playTone(659,0.2,'triangle',0.8),150); setTimeout(()=>this.playTone(784,0.2,'triangle',0.8),300); setTimeout(()=>this.playTone(1047,0.5,'sine',0.8),450); }
+    };
+    if (s[name]) s[name]();
+  }
+};
+
+const CLASS_ICONS = {'นักรบ':'🗡️','จอมเวท':'🔮','นักธนู':'🏹','พระสงฆ์':'🙏','นักปราชญ์':'📚','นักสำรวจ':'🧭'};
+
+// ข้อมูลคำถาม 10 ข้อ ต่อ 1 ภารกิจ (เนื้อหา ป.5)
+const QUESTS = {
+  history: { name:'ประวัติศาสตร์', icon:'🏛️', bg:'https://res.cloudinary.com/dyurfqm02/image/upload/v1782400042/%E0%B8%9B%E0%B8%A3%E0%B8%B0%E0%B8%A7%E0%B8%B1%E0%B8%95%E0%B8%B4_fvb0vo.jpg', questions:[
+    {q:'ข้อใดเป็นหลักฐานที่เป็นลายลักษณ์อักษร',a:['พระพุทธรูป','ศิลาจารึก','โบราณสถาน','เครื่องปั้นดินเผา'],correct:1},
+    {q:'ข้อใดเป็นหลักฐานที่ไม่เป็นลายลักษณ์อักษร',a:['จดหมาย','หนังสือพิมพ์','ภาพวาดโบราณ','พงศาวดาร'],correct:2},
+    {q:'หลักฐานที่เป็นลายลักษณ์อักษรมีลักษณ์สำคัญอย่างไร',a:['เป็นสิ่งก่อสร้างเท่านั้น','มีข้อความ ตัวอักษร หรือสัญลักษณ์บันทึกข้อมูล','เป็นสิ่งของที่ขุดพบใต้ดิน','เป็นเรื่องเล่าที่ไม่มีการบันทึก'],correct:1},
+    {q:'ข้อใดไม่ใช่หลักฐานที่เป็นลายลักษณ์อักษร',a:['จารึก','สมุดบันทึก','ตำนานที่เขียนเป็นหนังสือ','เจดีย์'],correct:3},
+    {q:'ข้อใดเป็นหลักฐานที่ช่วยให้ทราบเรื่องราวในอดีตได้ดีที่สุด',a:['หลักฐานที่มีความน่าเชื่อถือและตรวจสอบได้','เรื่องเล่าที่ไม่มีผู้ยืนยัน','ข่าวลือจากคนในชุมชน','ความคิดเห็นส่วนตัว'],correct:0},
+    {q:'ผู้ก่อตั้งอาณาจักรอยุธยาคือใคร',a:['พ่อขุนรามคำแหง','สมเด็จพระนเรศวรมหาราช','สมเด็จพระรามาธิบดีที่ 1 (พระเจ้าอู่ทอง)','สมเด็จพระเจ้าตากสินมหาราช'],correct:2},
+    {q:'อาณาจักรอยุธยาเสียกรุงครั้งที่ 2 ในปี พ.ศ. ใด',a:['พ.ศ. 2112','พ.ศ. 2310','พ.ศ. 2325','พ.ศ. 2475'],correct:1},
+    {q:'วีรกรรมของชาวบ้านบางระจันแสดงถึงเรื่องใดเด่นชัดที่สุด',a:['ความร่ำรวย','ความเสียสละและรักชาติ','ความมีระเบียบวินัย','ความซื่อสัตย์'],correct:1},
+    {q:'สมเด็จพระเจ้าตากสินมหาราชทรงตั้งราชธานีใหม่ชื่อว่าอะไร',a:['กรุงสุโขทัย','กรุงศรีอยุธยา','กรุงธนบุรี','กรุงเทพมหานคร'],correct:2},
+    {q:'ข้อใดเป็นภูมิปัญญาในการดำรงชีวิตของคนสมัยอยุธยาที่ป้องกันน้ำท่วม',a:['การสร้างกำแพงหิน','การปลูกเรือนไทยยกใต้ถุนสูง','การสร้างเจดีย์','การแต่งกายด้วยชุดไทย'],correct:1}
+  ]},
+  geography: { name:'ภูมิศาสตร์', icon:'🌍', bg:'https://res.cloudinary.com/dyurfqm02/image/upload/v1782400042/%E0%B8%A0%E0%B8%B9%E0%B8%A1%E0%B8%B4%E0%B8%A8%E0%B8%B2%E0%B8%AA%E0%B8%95%E0%B8%A3%E0%B9%8C_uzh7sa.jpg', questions:[
+    {q:'ประเทศไทยมีกี่ภาค (ตามหลักภูมิศาสตร์)?',a:['6 ภาค','4 ภาค','5 ภาค','7 ภาค'],correct:0},
+    {q:'แม่น้ำที่ยาวที่สุดในประเทศไทยคือ?',a:['แม่น้ำเจ้าพระยา','แม่น้ำโขง','แม่น้ำชี','แม่น้ำปิง'],correct:2},
+    {q:'ภูเขาที่สูงที่สุดในไทยคือ?',a:['ดอยอินทนนท์','ดอยสุเทพ','ภูกระดึง','ภูหลวง'],correct:0},
+    {q:'ประเทศไทยมีกี่จังหวัด?',a:['77 จังหวัด','76 จังหวัด','75 จังหวัด','78 จังหวัด'],correct:0},
+    {q:'ภาคใดมีพื้นที่มากที่สุด?',a:['ภาคตะวันออกเฉียงเหนือ','ภาคเหนือ','ภาคกลาง','ภาคใต้'],correct:0},
+    {q:'ภาคใต้ของไทยมีลักษณะภูมิอากาศแบบใด',a:['หนาวเย็นตลอดปี','ร้อนชื้น มีฝนตกชุกตลอดปี','แห้งแล้งมาก','อบอุ่น'],correct:1},
+    {q:'ลักษณะภูมิประเทศเด่นของภาคตะวันออกเฉียงเหนือคืออะไร',a:['ที่ราบลุ่มแม่น้ำ','ที่ราบสูงและแอ่งกระทะ','ภูเขาสูงสลับซับซ้อน','เกาะและชายฝั่งทะเล'],correct:1},
+    {q:'แม่น้ำสายสำคัญของภาคตะวันออกเฉียงเหนือคือข้อใด',a:['ปิง วัง ยม น่าน','เจ้าพระยา ท่าจีน','ชี มูล','ตาปี ปัตตานี'],correct:2},
+    {q:'ป่าไม้ประเภทใดพบมากที่สุดในประเทศไทย (โดยเฉพาะภาคเหนือ/ตะวันตก)',a:['ป่าชายเลน','ป่าเบญจพรรณและป่าเต็งรัง','ป่าดิบชื้น','ป่าสนเขา'],correct:1},
+    {q:'ทรัพยากรแร่ธาตุใดพบมากในภาคใต้และนิยมนำมาทำกระป๋องบรรจุอาหาร',a:['ทองคำ','เหล็ก','ดีบุก','สังกะสี'],correct:2}
+  ]},
+  religion: { name:'ศาสนา', icon:'🙏', bg:'https://res.cloudinary.com/dyurfqm02/image/upload/v1782400042/%E0%B8%A8%E0%B8%B2%E0%B8%AA%E0%B8%99%E0%B8%B2_z4rtfj.jpg', questions:[
+    {q:'พระพุทธเจ้าประสูติที่ใด?',a:['ลุมพินีวัน','พุทธคยา','สารนาถ','กุสินารา'],correct:0},
+    {q:'อริยสัจ 4 (ความจริงอันประเสริฐ) มีกี่ข้อ?',a:['4 ข้อ','3 ข้อ','5 ข้อ','8 ข้อ'],correct:0},
+    {q:'วันที่พระพุทธเจ้าทรงแสดงปฐมเทศนาคือวันใด?',a:['วันอาสาฬหบูชา','วันมาฆบูชา','วันวิสาขบูชา','วันเข้าพรรษา'],correct:0},
+    {q:'ไตรสิกขา ประกอบด้วยอะไรบ้าง?',a:['ศีล สมาธิ ปัญญา','ทาน ศีล ภาวนา','สติ สมาธิ ปัญญา','ศรัทธา วิริยะ สติ'],correct:0},
+    {q:'พระรัตนตรัย หมายถึงสิ่งใด?',a:['พระพุทธ พระธรรม พระสงฆ์','ศีล สมาธิ ปัญญา','ทาน ศีล ภาวนา','กาย วาจา ใจ'],correct:0},
+    {q:'คัมภีร์สูงสุดของศาสนาอิสลามคือข้อใด',a:['ไบเบิล','พระไตรปิฎก','อัลกุรอาน','พระเวท'],correct:2},
+    {q:'ศาสดาของศาสนาคริสต์คือใคร',a:['นบีมุฮัมมัด','พระเยซู','เจ้าชายสิทธัตถะ','พระพรหม'],correct:1},
+    {q:'หลักธรรมที่สำคัญที่สุดของศาสนาคริสต์คือข้อใด',a:['ความเมตตา','ความรัก','ความอดทน','ความสงบ'],correct:1},
+    {q:'วันสำคัญใดที่พระสงฆ์ 1,250 รูป มาประชุมกันโดยมิได้นัดหมาย',a:['วันวิสาขบูชา','วันอัฏฐมีบูชา','วันมาฆบูชา','วันออกพรรษา'],correct:2},
+    {q:'ศาสนสถานสำหรับประกอบพิธีกรรมของชาวมุสลิมเรียกว่าอะไร',a:['วัด','โบสถ์','มัสยิด (สุเหร่า)','เทวสถาน'],correct:2}
+  ]},
+  economics: { name:'เศรษฐศาสตร์', icon:'💰', bg:'https://res.cloudinary.com/dyurfqm02/image/upload/v1782400042/%E0%B9%80%E0%B8%A8%E0%B8%A3%E0%B8%A9%E0%B8%90%E0%B8%A8%E0%B8%B2%E0%B8%AA%E0%B8%95%E0%B8%A3%E0%B9%8C_nx95gt.jpg', questions:[
+    {q:'หลักปรัชญาเศรษฐกิจพอเพียงเป็นแนวพระราชดำริของใคร?',a:['รัชกาลที่ 9','รัชกาลที่ 5','รัชกาลที่ 10','รัชกาลที่ 7'],correct:0},
+    {q:'สินค้าส่งออกทางการเกษตรหลักของไทยตั้งแต่อดีตคืออะไร?',a:['ข้าว','น้ำมันปิโตรเลียม','แผงวงจรไฟฟ้า','เพชรพลอย'],correct:0},
+    {q:'ภาษีมูลค่าเพิ่ม (VAT) ในประเทศไทยปัจจุบันเก็บในอัตราเท่าใด?',a:['7%','10%','5%','15%'],correct:0},
+    {q:'ธนาคารแห่งประเทศไทย (แบงก์ชาติ) ทำหน้าที่อะไร?',a:['กำกับดูแลระบบการเงินของประเทศ','ปล่อยเงินกู้ให้ประชาชนทั่วไป','สร้างถนนและโรงเรียน','รับฝากเงินนักเรียน'],correct:0},
+    {q:'หลักเศรษฐกิจพอเพียงประกอบด้วยกี่ห่วง กี่เงื่อนไข?',a:['3 ห่วง 2 เงื่อนไข','2 ห่วง 3 เงื่อนไข','4 ห่วง 2 เงื่อนไข','3 ห่วง 3 เงื่อนไข'],correct:0},
+    {q:'สหกรณ์แห่งแรกของประเทศไทยมีชื่อว่าอะไร',a:['สหกรณ์การเกษตร','สหกรณ์วัดจันทร์ ไม่จำกัดสินใช้','สหกรณ์ออมทรัพย์ครู','สหกรณ์ร้านค้า'],correct:1},
+    {q:'สหกรณ์จัดตั้งขึ้นโดยยึดหลักการใดสำคัญที่สุด',a:['แสวงหาผลกำไรสูงสุด','การช่วยเหลือและพึ่งพาตนเอง','การแข่งขันทางการค้า','การลดต้นทุนการผลิต'],correct:1},
+    {q:'ข้อใด "ไม่ใช่" ปัจจัยการผลิตทางเศรษฐศาสตร์',a:['ที่ดิน','แรงงาน','ทุน','เงินกู้ยืมจากเพื่อน'],correct:3},
+    {q:'ธนาคารพาณิชย์ (เช่น ธ.กรุงเทพ, กสิกรไทย) มีหน้าที่หลักคืออะไร',a:['พิมพ์ธนบัตร','รับฝากเงินและปล่อยสินเชื่อ','ขายสินค้าทางการเกษตร','เก็บภาษีประชาชน'],correct:1},
+    {q:'สินค้า OTOP (โอทอป) หมายถึงอะไร',a:['สินค้านำเข้าจากต่างประเทศ','สินค้าหนึ่งตำบลหนึ่งผลิตภัณฑ์','สินค้าหนีภาษี','สินค้าราคาแพงในห้าง'],correct:1}
+  ]},
+  citizen: { name:'หน้าที่พลเมือง', icon:'👥', bg:'https://res.cloudinary.com/dyurfqm02/image/upload/v1782400042/%E0%B8%AB%E0%B8%99%E0%B9%89%E0%B8%B2%E0%B8%97%E0%B8%B5%E0%B9%88%E0%B8%9E%E0%B8%A5%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87_dmhphy.png', questions:[
+    {q:'ประชาชนคนไทยมีสิทธิเลือกตั้งเมื่ออายุครบกี่ปีบริบูรณ์?',a:['18 ปี','20 ปี','15 ปี','25 ปี'],correct:0},
+    {q:'กฎหมายสูงสุดที่ใช้ในการปกครองประเทศเรียกว่าอะไร?',a:['รัฐธรรมนูญ','กฎหมายอาญา','กฎหมายแพ่ง','กฎระเบียบกระทรวง'],correct:0},
+    {q:'ระบอบประชาธิปไตยหมายถึงอะไร?',a:['อำนาจอธิปไตยเป็นของประชาชน','อำนาจเป็นของคนรวย','อำนาจเป็นของทหาร','อำนาจเป็นของข้าราชการ'],correct:0},
+    {q:'ข้อใดคือการปฏิบัติตนเป็นพลเมืองดี?',a:['เคารพและปฏิบัติตามกฎหมาย','ทำตามใจตัวเองเสมอ','ไม่สนใจความเดือดร้อนของผู้อื่น','หลีกเลี่ยงการจ่ายภาษี'],correct:0},
+    {q:'สัตว์ประจำชาติไทยคือข้อใด?',a:['ช้าง','สิงโต','นกอินทรี','เสือโคร่ง'],correct:0},
+    {q:'ข้อใดคือองค์กรปกครองส่วนท้องถิ่น',a:['กระทรวงมหาดไทย','องค์การบริหารส่วนตำบล (อบต.)','ศาลยุติธรรม','รัฐสภา'],correct:1},
+    {q:'ผู้ว่าราชการกรุงเทพมหานคร ได้รับตำแหน่งมาด้วยวิธีใด',a:['การแต่งตั้งจากนายกรัฐมนตรี','การเลือกตั้งจากประชาชนในพื้นที่','การสอบคัดเลือก','การสืบทอดตำแหน่ง'],correct:1},
+    {q:'อำนาจอธิปไตยแบ่งออกเป็น 3 ฝ่าย ได้แก่ข้อใด',a:['ทหาร ตำรวจ พลเรือน','นิติบัญญัติ บริหาร ตุลาการ','รัฐบาล ฝ่ายค้าน ประชาชน','ครู นักเรียน ผู้ปกครอง'],correct:1},
+    {q:'เมื่อนักเรียนพบเห็นคนกำลังขโมยของ ควรปฏิบัติตนอย่างไร',a:['เข้าไปจับกุมด้วยตนเอง','รีบแจ้งเจ้าหน้าที่ตำรวจหรือผู้ใหญ่','ยืนดูเฉยๆ ไม่สนใจ','ถ่ายคลิปลงโซเชียลโดยไม่แจ้งใคร'],correct:1},
+    {q:'ประเพณีสงกรานต์ของไทย ถือเป็นวันขึ้นปีใหม่ไทย ตรงกับช่วงใดของปี',a:['มกราคม','เมษายน','สิงหาคม','พฤศจิกายน'],correct:1}
+  ]}
+};
+
+const BADGES = [
+  {id:'first_quest',name:'นักผจญภัยฝึกหัด',icon:'🌟',desc:'ทำภารกิจแรก'},
+  {id:'perfect',name:'สมองเพชร',icon:'💎',desc:'ตอบถูก 100%'},
+  {id:'level5',name:'อัศวินเลเวล 5',icon:'🛡️',desc:'ถึงระดับ 5'},
+  {id:'all_quests',name:'ผู้พิชิตดินแดน',icon:'👑',desc:'ครบทุกหมวด'},
+  {id:'rich',name:'ถุงเงินถุงทอง',icon:'💰',desc:'สะสม 500 เหรียญ'},
+  {id:'level10',name:'จอมเวทระดับ 10',icon:'🏆',desc:'ถึงระดับ 10'}
+];
+
+const XP_PER_LEVEL = 100, XP_PER_CORRECT = 20, COINS_PER_CORRECT = 10;
+let player = null, currentQuest = null, currentQ = 0, questScore = 0, selectedClass = 'นักรบ';
+let battle = { teamA:'', teamB:'', subject:'', scoreA:0, scoreB:0, currentQ:0, currentTeam:'A', questions:[] };
+let battleSubject = '';
+
+// Storage
+function loadPlayer() { const d=localStorage.getItem('kq_player_v4'); return d?JSON.parse(d):null; }
+function savePlayer() { localStorage.setItem('kq_player_v4',JSON.stringify(player)); updateLeaderboard(); }
+function loadLeaderboard() { return JSON.parse(localStorage.getItem('kq_leaderboard_v4')||'[]'); }
+function updateLeaderboard() {
+  let lb=loadLeaderboard();
+  const idx=lb.findIndex(p=>p.name===player.name);
+  const entry={name:player.name,level:player.level,xp:player.totalXp,class:player.class};
+  if(idx>=0) lb[idx]=entry; else lb.push(entry);
+  lb.sort((a,b)=>b.xp-a.xp);
+  localStorage.setItem('kq_leaderboard_v4',JSON.stringify(lb.slice(0,10)));
+}
+
+function showView(id) {
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  setTimeout(()=>{document.getElementById(id).classList.add('active');},50);
+  if(id==='view-dashboard') renderDashboard();
+}
+
+function logout() {
+  audioSystem.playSound('click');
+  if(confirm('ต้องการสลับผู้เล่น (สร้างตัวละครใหม่) ใช่หรือไม่?\n\n* ข้อมูลของคุณจะยังอยู่ในหอเกียรติยศ (อันดับ) *')) {
+    localStorage.removeItem('kq_player_v4'); 
+    player = null;
+    document.getElementById('player-name').value = '';
+    
+    document.querySelectorAll('.class-btn').forEach(b=>{
+        b.classList.remove('border-amber-500','bg-amber-100','scale-105','opacity-100');
+        b.classList.add('opacity-70');
+    });
+    document.querySelector('.class-btn').click(); 
+    
+    showView('view-login'); 
+  }
+}
+
+// Login
+document.getElementById('enter-btn').addEventListener('click',()=>{
+  audioSystem.init(); audioSystem.playSound('button');
+  audioSystem.playBGM(); 
+  
+  const name=document.getElementById('player-name').value.trim();
+  if(!name){document.getElementById('player-name').focus();return;}
+  player=loadPlayer();
+  if(!player||player.name!==name) player={name,class:selectedClass,level:1,xp:0,totalXp:0,coins:0,badges:[],completedQuests:[]};
+  player.class=selectedClass; savePlayer(); showView('view-dashboard');
+});
+
+document.querySelectorAll('.class-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    audioSystem.init(); audioSystem.playSound('click'); audioSystem.playBGM(); 
+    document.querySelectorAll('.class-btn').forEach(b=>{
+        b.classList.remove('border-amber-500','bg-amber-100','scale-105','opacity-100');
+        b.classList.add('opacity-70');
+    });
+    btn.classList.add('border-amber-500','bg-amber-100','scale-105','opacity-100');
+    btn.classList.remove('opacity-70');
+    selectedClass=btn.dataset.class;
+  });
+});
+
+// Dashboard
+function renderDashboard() {
+  if(!player) return;
+  document.getElementById('avatar-icon').textContent=CLASS_ICONS[player.class]||'🗡️';
+  document.getElementById('dash-name').textContent=player.name;
+  document.getElementById('dash-class').textContent=player.class;
+  document.getElementById('dash-coins').textContent=player.coins;
+  document.getElementById('dash-level').textContent='Lv.'+player.level;
+  
+  const xpNeeded=player.level*XP_PER_LEVEL;
+  document.getElementById('xp-bar').style.width=Math.min((player.xp/xpNeeded)*100,100)+'%';
+  document.getElementById('xp-text').textContent=player.xp+' / '+xpNeeded;
+  
+  renderMapGrid(); renderQuestList(); renderBadges(); renderLeaderboard(); switchTab('map');
+}
+
+function switchTab(tab) {
+  audioSystem.playSound('click');
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.add('hidden'));
+  document.getElementById('tab-'+tab).classList.remove('hidden');
+  document.querySelectorAll('.nav-tab').forEach(b=>{
+    if(b.dataset.tab===tab) b.classList.add('text-amber-300');
+    else b.classList.remove('text-amber-300');
+  });
+}
+
+function renderMapGrid() {
+  const el = document.getElementById('map-quest-grid');
+  el.innerHTML = '';
+  Object.entries(QUESTS).forEach(([key, q]) => {
+    const done = player.completedQuests.includes(key);
+    const isLast = key === 'citizen';
+    const colSpan = isLast ? 'col-span-2' : '';
+    const hClass = isLast ? 'h-36' : 'h-32';
+    
+    // หากผ่านด่านแล้ว แสดงตราประทับพร้อมกรอบสีเขียว
+    let doneBadge = done ? `
+    <div class="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-lg z-20 border-2 border-green-200">
+      <i data-lucide="check" class="w-5 h-5"></i>
+    </div>
+    <div class="absolute inset-0 border-4 border-green-500 z-10 rounded-[10px] pointer-events-none"></div>` : '';
+
+    el.innerHTML += `
+      <button type="button" class="btn-3d relative overflow-hidden p-0 ${hClass} flex flex-col items-center justify-end group w-full ${colSpan}" onclick="startQuest('${key}')">
+        ${doneBadge}
+        <img src="${q.bg}" class="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${done? 'opacity-60': ''}" alt="${q.name}">
+        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/${isLast?'40':'30'} to-transparent"></div>
+        <div class="relative z-10 pb-${isLast?'4':'3'} flex flex-col items-center gap-1 w-full">
+          <span class="text-${isLast?'4xl':'3xl'} drop-shadow-md">${q.icon}</span>
+          <p class="font-extrabold text-${isLast?'xl':'base'} text-${done?'green-400':'amber-300'} quest-title tracking-wide">${q.name}${done?'<br><span class="text-[10px] text-green-300">(ผ่านแล้ว)</span>':''}</p>
+        </div>
+      </button>
+    `;
+  });
+  if(window.lucide) lucide.createIcons();
+}
+
+function renderQuestList() {
+  const el=document.getElementById('quest-list'); el.innerHTML='';
+  Object.entries(QUESTS).forEach(([key,q])=>{
+    const done=player.completedQuests.includes(key);
+    const div=document.createElement('button'); div.type='button';
+    div.className=`btn-3d w-full flex items-center gap-4 p-4 text-left ${done?'bg-green-100 border-green-600 opacity-80':'bg-white'}`;
+    div.innerHTML=`<div class="text-4xl drop-shadow-md">${q.icon}</div><div class="flex-1"><p class="text-amber-900 font-extrabold text-lg">${q.name}</p><p class="text-amber-700/80 text-sm font-bold">${done?'✅ ผ่านภารกิจแล้ว':'ภารกิจ 10 ข้อ'}</p></div><i data-lucide="chevron-right" class="w-6 h-6 text-amber-600"></i>`;
+    div.onclick=()=>{audioSystem.playSound('click');startQuest(key);};
+    el.appendChild(div);
+  });
+  if(window.lucide) lucide.createIcons();
+}
+
+function renderBadges() {
+  const el=document.getElementById('badge-grid'); el.innerHTML='';
+  BADGES.forEach(b=>{
+    const earned=player.badges.includes(b.id);
+    el.innerHTML+=`<div class="flex flex-col items-center p-3 rounded-2xl ${earned?'bg-white/50 border-2 border-amber-400 shadow-md':'bg-black/10 border-2 border-amber-900/20 grayscale opacity-50'}"><div class="text-4xl mb-1 drop-shadow-md">${b.icon}</div><p class="text-[10px] text-amber-900 font-bold text-center leading-tight">${b.name}</p></div>`;
+  });
+}
+
+function renderLeaderboard() {
+  const lb=loadLeaderboard(); const el=document.getElementById('leaderboard-list'); el.innerHTML='';
+  const medals=['🥇','🥈','🥉'];
+  lb.forEach((p,i)=>{
+    el.innerHTML+=`<div class="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-amber-500/30"><span class="text-2xl w-8 text-center drop-shadow-md">${medals[i]||(i+1)}</span><div class="flex-1"><p class="font-bold text-amber-100 text-base">${p.name}</p><p class="text-xs text-amber-400 font-medium">Lv.${p.level} • ${p.class}</p></div><span class="text-amber-300 font-black text-sm bg-black/40 px-3 py-1 rounded-lg border border-amber-500/50">${p.xp} XP</span></div>`;
+  });
+  if(!lb.length) el.innerHTML='<p class="text-center text-amber-200/50 py-4">ยังไม่มีนักผจญภัย</p>';
+}
+
+// Solo Quest
+function startQuest(key) { currentQuest=key; currentQ=0; questScore=0; showView('view-quest'); renderQuestion(); }
+function renderQuestion() {
+  const totalQ = QUESTS[currentQuest].questions.length;
+  const q=QUESTS[currentQuest].questions[currentQ];
+  
+  document.getElementById('quest-card-icon').textContent = CLASS_ICONS[player.class] || '🗡️';
+  document.getElementById('quest-card-name').textContent = player.name;
+  document.getElementById('quest-card-topic').textContent = QUESTS[currentQuest].name;
+  
+  document.getElementById('quest-progress').textContent=`ข้อ ${currentQ+1}/${totalQ}`;
+  document.getElementById('quest-question').textContent=q.q;
+  document.getElementById('quest-feedback').classList.add('hidden');
+  const el=document.getElementById('quest-answers'); el.innerHTML='';
+  q.a.forEach((a,i)=>{
+    el.innerHTML+=`<button type="button" class="btn-answer w-full p-4 text-left font-bold text-base" onclick="answer(${i})">${a}</button>`;
+  });
+}
+
+function answer(idx) {
+  const q=QUESTS[currentQuest].questions[currentQ];
+  const fb=document.getElementById('quest-feedback'); fb.classList.remove('hidden');
+  const btns=document.getElementById('quest-answers').querySelectorAll('button');
+  btns.forEach(b=>b.disabled=true);
+  
+  btns[q.correct].style.background='#d1fae5'; btns[q.correct].style.borderColor='#059669'; btns[q.correct].style.color='#064e3b';
+  
+  if(idx===q.correct){
+      questScore++; audioSystem.playSound('correct'); audioSystem.playSound('coin');
+      fb.textContent='✅ ยอดเยี่ยม! ถูกต้อง!';
+      fb.className='mt-6 text-center text-xl font-extrabold text-green-700 bg-green-100 p-3 rounded-xl shadow-lg border-2 border-green-400 animate-in';
+  } else{
+      audioSystem.playSound('wrong');
+      btns[idx].style.background='#ffe4e6'; btns[idx].style.borderColor='#e11d48'; btns[idx].style.color='#881337';
+      fb.textContent='❌ พลาดไปนิด เอาใหม่นะ!';
+      fb.className='mt-6 text-center text-xl font-extrabold text-rose-700 bg-rose-100 p-3 rounded-xl shadow-lg border-2 border-rose-400 animate-in';
+  }
+  setTimeout(()=>{currentQ++;if(currentQ<QUESTS[currentQuest].questions.length)renderQuestion();else finishQuest();},1500);
+}
+
+function finishQuest() {
+  const totalQ = QUESTS[currentQuest].questions.length;
+  const earned_xp=questScore*XP_PER_CORRECT, earned_coins=questScore*COINS_PER_CORRECT;
+  player.xp+=earned_xp; player.totalXp+=earned_xp; player.coins+=earned_coins;
+  let leveledUp=false;
+  while(player.xp>=player.level*XP_PER_LEVEL){player.xp-=player.level*XP_PER_LEVEL;player.level++;leveledUp=true;}
+  if(leveledUp)audioSystem.playSound('levelup');
+  if(!player.completedQuests.includes(currentQuest))player.completedQuests.push(currentQuest);
+  
+  if(!player.badges.includes('first_quest'))player.badges.push('first_quest');
+  if(questScore===totalQ&&!player.badges.includes('perfect'))player.badges.push('perfect');
+  if(player.level>=5&&!player.badges.includes('level5'))player.badges.push('level5');
+  if(player.level>=10&&!player.badges.includes('level10'))player.badges.push('level10');
+  if(player.coins>=500&&!player.badges.includes('rich'))player.badges.push('rich');
+  if(player.completedQuests.length>=5&&!player.badges.includes('all_quests'))player.badges.push('all_quests');
+  
+  savePlayer();
+  document.getElementById('result-score').textContent=`ตอบถูก ${questScore} จาก ${totalQ} ข้อ`;
+  document.getElementById('result-rewards').textContent=`+${earned_xp} XP | +${earned_coins} 🪙`;
+  document.getElementById('result-icon').textContent=questScore>=(totalQ*0.8)?'💎':questScore>=(totalQ*0.4)?'✨':'💪';
+  showView('view-result');
+}
+
+// Battle Mode
+document.querySelectorAll('.battle-subj-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    audioSystem.playSound('click');
+    document.querySelectorAll('.battle-subj-btn').forEach(b=>{
+        b.classList.remove('bg-amber-300','border-amber-600','scale-105');
+        b.classList.add('bg-amber-50');
+    });
+    btn.classList.add('bg-amber-300','border-amber-600','scale-105');
+    btn.classList.remove('bg-amber-50');
+    battleSubject=btn.dataset.subj;
+  });
+});
+
+document.getElementById('battle-start-btn').addEventListener('click',()=>{
+  audioSystem.playSound('button');
+  const teamA=document.getElementById('team-a-name').value.trim()||'ทีมแดง';
+  const teamB=document.getElementById('team-b-name').value.trim()||'ทีมน้ำเงิน';
+  if(!battleSubject){return;}
+  battle={teamA,teamB,subject:battleSubject,scoreA:0,scoreB:0,currentQ:0,currentTeam:'A',questions:[...QUESTS[battleSubject].questions]};
+  showView('view-battle');
+  renderBattleQuestion();
+});
+
+function surrenderBattle() {
+  audioSystem.playSound('click');
+  if(confirm('ต้องการยอมแพ้และยุติการประลองใช่หรือไม่?')) {
+    finishBattle(true); // true = มีคนกดบังคับจบ/ยอมแพ้
+  }
+}
+
+function renderBattleQuestion() {
+  const totalQ = battle.questions.length;
+  const q = battle.questions[battle.currentQ];
+  
+  document.getElementById('battle-progress').textContent=`ข้อ ${battle.currentQ+1}/${totalQ}`;
+  document.getElementById('battle-team-a-label').textContent=battle.teamA;
+  document.getElementById('battle-team-b-label').textContent=battle.teamB;
+  document.getElementById('battle-score-a').textContent=battle.scoreA;
+  document.getElementById('battle-score-b').textContent=battle.scoreB;
+  
+  const indicator=document.getElementById('battle-turn-indicator');
+  const boxA=document.getElementById('battle-team-a-box');
+  const boxB=document.getElementById('battle-team-b-box');
+  
+  if(battle.currentTeam==='A'){
+    indicator.textContent=`⚔️ ตาของ ${battle.teamA}`;
+    indicator.className='px-6 py-2 rounded-full text-lg font-black shadow-[0_0_15px_rgba(239,68,68,0.8)] inline-block border-2 text-white transition-all bg-gradient-to-r from-red-600 to-red-500 border-red-300 scale-105';
+    boxA.classList.add('border-amber-300','scale-110','z-10'); boxA.classList.remove('border-red-500');
+    boxB.classList.remove('border-amber-300','scale-110','z-10'); boxB.classList.add('border-blue-500');
+  } else {
+    indicator.textContent=`🛡️ ตาของ ${battle.teamB}`;
+    indicator.className='px-6 py-2 rounded-full text-lg font-black shadow-[0_0_15px_rgba(59,130,246,0.8)] inline-block border-2 text-white transition-all bg-gradient-to-r from-blue-600 to-blue-500 border-blue-300 scale-105';
+    boxB.classList.add('border-amber-300','scale-110','z-10'); boxB.classList.remove('border-blue-500');
+    boxA.classList.remove('border-amber-300','scale-110','z-10'); boxA.classList.add('border-red-500');
+  }
+  
+  document.getElementById('battle-question').textContent=q.q;
+  document.getElementById('battle-feedback').classList.add('hidden');
+  const el=document.getElementById('battle-answers'); el.innerHTML='';
+  q.a.forEach((a,i)=>{
+    el.innerHTML+=`<button type="button" class="btn-answer w-full p-4 text-left font-bold text-base" onclick="battleAnswer(${i})">${a}</button>`;
+  });
+}
+
+function battleAnswer(idx) {
+  const q=battle.questions[battle.currentQ];
+  const fb=document.getElementById('battle-feedback'); fb.classList.remove('hidden');
+  const btns=document.getElementById('battle-answers').querySelectorAll('button');
+  btns.forEach(b=>b.disabled=true);
+  
+  btns[q.correct].style.background='#d1fae5'; btns[q.correct].style.borderColor='#059669'; btns[q.correct].style.color='#064e3b';
+  
+  if(idx===q.correct){
+    if(battle.currentTeam==='A') battle.scoreA++; else battle.scoreB++;
+    audioSystem.playSound('correct');
+    fb.textContent='✅ โจมตีสำเร็จ! +1 คะแนน';
+    fb.className='mt-4 text-center text-xl font-black text-green-700 bg-green-100 p-3 rounded-xl shadow-lg border-2 border-green-400';
+  } else {
+    audioSystem.playSound('wrong');
+    btns[idx].style.background='#ffe4e6'; btns[idx].style.borderColor='#e11d48'; btns[idx].style.color='#881337';
+    fb.textContent='❌ พลาดเป้าหมาย!';
+    fb.className='mt-4 text-center text-xl font-black text-rose-700 bg-rose-100 p-3 rounded-xl shadow-lg border-2 border-rose-400';
+  }
+  
+  document.getElementById('battle-score-a').textContent=battle.scoreA;
+  document.getElementById('battle-score-b').textContent=battle.scoreB;
+  
+  setTimeout(()=>{
+    battle.currentTeam = battle.currentTeam==='A'?'B':'A';
+    battle.currentQ++;
+    if(battle.currentQ<battle.questions.length) renderBattleQuestion();
+    else finishBattle();
+  },1500);
+}
+
+// แสดง Pop-up Victory Card ทับหน้าจอเดิม
+function finishBattle(isSurrender = false) {
+  audioSystem.playSound('victory');
+  
+  document.getElementById('modal-team-a-name').textContent = battle.teamA;
+  document.getElementById('modal-team-b-name').textContent = battle.teamB;
+  document.getElementById('modal-score-a').textContent = battle.scoreA;
+  document.getElementById('modal-score-b').textContent = battle.scoreB;
+  
+  let winner='';
+  let title = isSurrender ? 'มีทีมขอยอมแพ้!' : 'ผลการประลองเวท';
+  document.getElementById('modal-result-title').textContent = title;
+
+  if(battle.scoreA > battle.scoreB){ 
+      winner = battle.teamA + ' ชนะ! 🔥'; 
+      document.getElementById('modal-result-icon').textContent = '🔴'; 
+  } else if(battle.scoreB > battle.scoreA){ 
+      winner = battle.teamB + ' ชนะ! 🌊'; 
+      document.getElementById('modal-result-icon').textContent = '🔵'; 
+  } else { 
+      winner = 'เสมอภาค! 🤝'; 
+      document.getElementById('modal-result-icon').textContent = '⚖️'; 
+  }
+  
+  document.getElementById('modal-winner-name').textContent = winner;
+  
+  // เปิด Modal Popup
+  const modal = document.getElementById('battle-victory-modal');
+  const card = document.getElementById('victory-card-content');
+  modal.classList.remove('hidden');
+  
+  // สร้าง Effect เด้งเข้า
+  setTimeout(() => {
+    card.classList.remove('scale-0');
+    card.classList.add('scale-100');
+  }, 50);
+}
+
+// ปิด Pop-up แล้วกลับหน้า Dashboard
+function closeVictoryModal() {
+  audioSystem.playSound('click');
+  const modal = document.getElementById('battle-victory-modal');
+  const card = document.getElementById('victory-card-content');
+  
+  // Effect หดออก
+  card.classList.remove('scale-100');
+  card.classList.add('scale-0');
+  
+  setTimeout(() => {
+    modal.classList.add('hidden');
+    showView('view-dashboard');
+  }, 400);
+}
+
+// Init
+(function init(){
+  audioSystem.init();
+  player=loadPlayer();
+  
+  document.body.addEventListener('click', () => {
+    audioSystem.init();
+    audioSystem.playBGM();
+  }, { once: true });
+  
+  document.querySelector('.class-btn').click(); 
+  if(player){document.getElementById('player-name').value=player.name;showView('view-dashboard');}
+  if(window.lucide) lucide.createIcons();
+})();
+  </script>
+</body>
+</html>
